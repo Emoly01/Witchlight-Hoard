@@ -339,7 +339,7 @@ export default function WitchlightHoardChronik() {
         }
         .hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; }
         .gm-badge {
-          font-family: 'Cinzel', serif; font-size: 0.45rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.6rem; font-weight: 700;
           letter-spacing: 0.15em; text-transform: uppercase;
           padding: 0.2rem 0.5rem; border-radius: 2px;
         }
@@ -347,7 +347,7 @@ export default function WitchlightHoardChronik() {
         .gm-badge.inactive { background: #0a1510; color: #2a4a38; border: 1px solid #1a3028; cursor: pointer; transition: all 0.15s; }
         .gm-badge.inactive:hover { background: #0e2a1e; color: #5aaa78; }
         .player-chip {
-          font-family: 'Cinzel', serif; font-size: 0.42rem;
+          font-family: 'Cinzel', serif; font-size: 0.58rem;
           letter-spacing: 0.1em; text-transform: uppercase;
           color: #2a5a3a; cursor: pointer;
         }
@@ -360,7 +360,7 @@ export default function WitchlightHoardChronik() {
         }
         .tab-row::-webkit-scrollbar { display: none; }
         .tab-btn {
-          font-family: 'Cinzel', serif; font-size: 0.46rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.68rem; font-weight: 700;
           letter-spacing: 0.12em; text-transform: uppercase;
           padding: 0.55rem 0.8rem; background: none; border: none;
           cursor: pointer; color: #2a4a38; white-space: nowrap;
@@ -369,7 +369,7 @@ export default function WitchlightHoardChronik() {
         }
         .tab-btn.active { color: #7ec8a0; border-bottom-color: #5aaa78; }
         .tab-btn:hover:not(.active) { color: #4a7a58; }
-        .tab-icon { font-size: 0.8rem; }
+        .tab-icon { font-size: 1rem; }
 
         /* ── Page ── */
         .page { padding: 1.2rem; max-width: 680px; margin: 0 auto; }
@@ -388,24 +388,24 @@ export default function WitchlightHoardChronik() {
         .card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .card-header { display: flex; align-items: flex-start; gap: 0.7rem; cursor: pointer; }
         .card-date-lbl {
-          font-family: 'Cinzel', serif; font-size: 0.42rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.6rem; font-weight: 700;
           letter-spacing: 0.1em; text-transform: uppercase; color: #2a5a38;
           min-width: auto; flex-shrink: 0; line-height: 1.4; padding-top: 0.1rem;
         }
         .card-info { flex: 1; }
         .card-title {
-          font-family: 'Playfair Display', serif; font-size: 1rem;
+          font-family: 'Playfair Display', serif; font-size: 1.15rem;
           font-weight: 700; color: #c8dcd2; margin: 0 0 0.15rem; line-height: 1.3;
         }
         .card-meta {
-          font-family: 'Cinzel', serif; font-size: 0.42rem;
+          font-family: 'Cinzel', serif; font-size: 0.6rem;
           letter-spacing: 0.12em; text-transform: uppercase; color: #2a4a38;
         }
         .card-chevron { color: #1a3028; font-size: 0.7rem; flex-shrink: 0; margin-top: 0.3rem; transition: transform 0.2s; }
         .card-chevron.open { transform: rotate(180deg); }
         .card-body { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid #0e2018; }
         .narrative {
-          font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+          font-family: 'Crimson Pro', serif; font-size: 1.05rem;
           line-height: 1.85; color: #8aaa95; font-style: italic;
           white-space: pre-wrap;
         }
@@ -448,12 +448,12 @@ export default function WitchlightHoardChronik() {
         .npc-img img { width: 100%; height: 100%; object-fit: cover; }
         .npc-card-body { padding: 0.6rem 0.7rem; }
         .npc-card-name {
-          font-family: 'Cinzel', serif; font-size: 0.62rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700;
           letter-spacing: 0.08em; color: #c8dcd2; margin: 0 0 0.15rem;
         }
         .npc-card-faction {
           font-family: 'Crimson Pro', serif; font-style: italic;
-          font-size: 0.72rem; color: #4a7a58; margin: 0;
+          font-size: 0.88rem; color: #4a7a58; margin: 0;
         }
         .npc-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 0.3rem; }
 
@@ -503,10 +503,10 @@ export default function WitchlightHoardChronik() {
           border: 1px solid var(--qc); color: var(--qc); flex-shrink: 0; margin-top: 0.15rem; white-space: nowrap;
         }
         .quest-title {
-          font-family: 'Cinzel', serif; font-size: 0.72rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.88rem; font-weight: 700;
           letter-spacing: 0.06em; color: #c8dcd2; margin: 0 0 0.2rem;
         }
-        .quest-desc { font-size: 0.85rem; color: #5a8a68; line-height: 1.5; margin: 0; }
+        .quest-desc { font-size: 1rem; color: #5a8a68; line-height: 1.5; margin: 0; }
         .quest-by {
           font-family: 'Cinzel', serif; font-size: 0.4rem; letter-spacing: 0.1em;
           text-transform: uppercase; color: #2a4a38; margin-top: 0.3rem;
@@ -530,10 +530,10 @@ export default function WitchlightHoardChronik() {
         }
         .quote-text {
           font-family: 'Crimson Pro', serif; font-style: italic;
-          font-size: 0.95rem; color: #8aaa95; line-height: 1.65; margin: 0 0 0.5rem;
+          font-size: 1.05rem; color: #8aaa95; line-height: 1.65; margin: 0 0 0.5rem;
         }
         .quote-speaker {
-          font-family: 'Cinzel', serif; font-size: 0.45rem;
+          font-family: 'Cinzel', serif; font-size: 0.62rem;
           letter-spacing: 0.12em; text-transform: uppercase; color: #2a4a38;
         }
         .quote-del {
@@ -550,15 +550,15 @@ export default function WitchlightHoardChronik() {
           box-shadow: 0 2px 12px rgba(0,0,0,0.3);
         }
         .snippet-title {
-          font-family: 'Playfair Display', serif; font-size: 0.95rem;
+          font-family: 'Playfair Display', serif; font-size: 1.05rem;
           font-weight: 700; font-style: italic; color: #a0c8b0; margin: 0 0 0.6rem;
         }
         .snippet-text {
           font-family: 'Crimson Pro', serif; font-style: italic;
-          font-size: 0.92rem; line-height: 1.9; color: #7a9a85; white-space: pre-wrap;
+          font-size: 1rem; line-height: 1.9; color: #7a9a85; white-space: pre-wrap;
         }
         .snippet-meta {
-          font-family: 'Cinzel', serif; font-size: 0.42rem; letter-spacing: 0.12em;
+          font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.12em;
           text-transform: uppercase; color: #1a3028; margin-top: 0.7rem;
         }
 
@@ -569,12 +569,12 @@ export default function WitchlightHoardChronik() {
           border-radius: 0 2px 2px 0; padding: 0.8rem 1rem; margin-bottom: 0.5rem;
         }
         .pnote-author {
-          font-family: 'Cinzel', serif; font-size: 0.48rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700;
           letter-spacing: 0.15em; text-transform: uppercase; color: #5aaa78; margin: 0 0 0.3rem;
         }
-        .pnote-text { font-size: 0.92rem; color: #7a9a85; line-height: 1.6; margin: 0; }
+        .pnote-text { font-size: 1rem; color: #7a9a85; line-height: 1.6; margin: 0; }
         .pnote-date {
-          font-family: 'Cinzel', serif; font-size: 0.4rem;
+          font-family: 'Cinzel', serif; font-size: 0.55rem;
           letter-spacing: 0.1em; color: #1a3028; margin-top: 0.25rem;
         }
 
@@ -584,17 +584,17 @@ export default function WitchlightHoardChronik() {
           border-radius: 2px; padding: 1rem 1.2rem; margin-bottom: 1rem;
         }
         .form-title {
-          font-family: 'Cinzel', serif; font-size: 0.58rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 700;
           letter-spacing: 0.2em; text-transform: uppercase; color: #5aaa78; margin: 0 0 0.8rem;
         }
         .f-group { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.6rem; }
         .f-label {
-          font-family: 'Cinzel', serif; font-size: 0.48rem; font-weight: 600;
+          font-family: 'Cinzel', serif; font-size: 0.62rem; font-weight: 600;
           letter-spacing: 0.15em; text-transform: uppercase; color: #3a6a4a;
         }
         .f-input {
           background: #080f0c; border: 1px solid #1a3028; color: #c8dcd2;
-          font-family: 'Crimson Pro', serif; font-size: 0.95rem;
+          font-family: 'Crimson Pro', serif; font-size: 1rem;
           padding: 0.5rem 0.7rem; outline: none; border-radius: 1px; width: 100%;
           transition: border-color 0.15s;
         }
@@ -610,7 +610,7 @@ export default function WitchlightHoardChronik() {
 
         /* ── Buttons ── */
         .btn-primary {
-          font-family: 'Cinzel', serif; font-size: 0.55rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 700;
           letter-spacing: 0.2em; text-transform: uppercase; color: #080f0c;
           background: linear-gradient(135deg, #4a9a70, #7ec8a0);
           border: none; padding: 0.5rem 1.2rem; cursor: pointer; border-radius: 1px;
@@ -619,14 +619,14 @@ export default function WitchlightHoardChronik() {
         .btn-primary:hover { filter: brightness(1.1); box-shadow: 0 2px 20px rgba(126,200,160,0.35); transform: translateY(-1px); }
         .btn-primary:disabled { opacity: 0.3; transform: none; box-shadow: none; }
         .btn-secondary {
-          font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.12em;
+          font-family: 'Cinzel', serif; font-size: 0.7rem; letter-spacing: 0.12em;
           text-transform: uppercase; color: #3a6a4a; background: #0a1510;
           border: 1px solid #1a3028; padding: 0.5rem 1rem; cursor: pointer;
           border-radius: 1px; transition: all 0.15s;
         }
         .btn-secondary:hover { background: #0e2018; border-color: #3a6a4a; }
         .btn-add {
-          font-family: 'Cinzel', serif; font-size: 0.52rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.68rem; font-weight: 700;
           letter-spacing: 0.15em; text-transform: uppercase; color: #4a9a70;
           background: #0a1510; border: 1px dashed #2a5a3a;
           padding: 0.5rem 1rem; cursor: pointer; border-radius: 1px; transition: all 0.15s;
@@ -639,7 +639,7 @@ export default function WitchlightHoardChronik() {
         .btn-danger:hover { color: #c87e7e; }
         .section-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
         .section-title {
-          font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700;
           letter-spacing: 0.2em; text-transform: uppercase; color: #5aaa78; margin: 0;
         }
         .card-act-edit {
@@ -669,7 +669,7 @@ export default function WitchlightHoardChronik() {
         .rich-tool-btn:active { transform: scale(0.92); }
         .rich-content {
           padding: 0.6rem 0.8rem; font-family: 'Crimson Pro', serif;
-          font-size: 0.95rem; color: #b8ccc0; line-height: 1.85; outline: none;
+          font-size: 1.05rem; color: #b8ccc0; line-height: 1.85; outline: none;
         }
         .rich-content:empty:before { content: attr(data-placeholder); color: #1a3028; font-style: italic; pointer-events: none; }
         .rich-content ul { margin: 0.3rem 0 0.3rem 1.2rem; padding: 0; }
@@ -740,11 +740,11 @@ export default function WitchlightHoardChronik() {
         .fund-card-top { padding: 0.9rem 0.9rem 0.4rem; display: flex; align-items: flex-start; gap: 0.5rem; }
         .fund-icon { font-size: 1.4rem; flex-shrink: 0; line-height: 1; }
         .fund-card-name {
-          font-family: 'Cinzel', serif; font-size: 0.62rem; font-weight: 700;
+          font-family: 'Cinzel', serif; font-size: 0.8rem; font-weight: 700;
           letter-spacing: 0.06em; color: #c8dcd2; line-height: 1.3;
         }
         .fund-type-label {
-          font-family: 'Cinzel', serif; font-size: 0.4rem; letter-spacing: 0.1em;
+          font-family: 'Cinzel', serif; font-size: 0.58rem; letter-spacing: 0.1em;
           text-transform: uppercase; color: #2a4a38; padding: 0 0.9rem 0.5rem; display: block;
         }
         .fund-preview {
@@ -789,7 +789,7 @@ export default function WitchlightHoardChronik() {
         .empty {
           text-align: center; padding: 3rem 1.5rem;
           font-family: 'Crimson Pro', serif; font-style: italic;
-          color: #1a3028; font-size: 1rem; line-height: 1.8;
+          color: #1a3028; font-size: 1.1rem; line-height: 1.8;
         }
         .divider { border: none; border-top: 1px solid #0e2018; margin: 0.8rem 0; }
         .tag {
