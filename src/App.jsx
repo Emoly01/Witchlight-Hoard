@@ -401,7 +401,7 @@ export default function WitchlightHoardChronik() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#080f0c", color: "#b8ccc0", fontFamily: "'Crimson Pro', Georgia, serif" }}>
+    <div style={{ minHeight: "100vh", background: "#080f0c", color: "#b8ccc0", fontFamily: "'Crimson Pro', Georgia, serif", fontSize: "110%" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
         * { box-sizing: border-box; }
