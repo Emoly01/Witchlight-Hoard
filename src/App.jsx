@@ -27,9 +27,23 @@ function makeId() { return Date.now().toString(36) + Math.random().toString(36).
 function formatDate(ts) { return new Date(ts).toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" }); }
 
 // ── Rich Text Editor ─────────────────────────────────────────
+const FONT_COLORS = [
+  { label: "Standard",    value: null,      swatch: "#b8ccc0" },
+  { label: "Grün",        value: "#7ec8a0", swatch: "#7ec8a0" },
+  { label: "Hellgrün",    value: "#a0ddb8", swatch: "#a0ddb8" },
+  { label: "Gold",        value: "#c8a840", swatch: "#c8a840" },
+  { label: "Elfenbein",   value: "#e8dcc8", swatch: "#e8dcc8" },
+  { label: "Rot",         value: "#c87e7e", swatch: "#c87e7e" },
+  { label: "Hellblau",    value: "#7eb8c8", swatch: "#7eb8c8" },
+  { label: "Lila",        value: "#b87ec8", swatch: "#b87ec8" },
+  { label: "Grau",        value: "#7a8a80", swatch: "#7a8a80" },
+];
+
 function RichEditor({ value, onChange, placeholder, rows = 5 }) {
   const ref = useRef(null);
   const isInternalChange = useRef(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const colorPickerRef = useRef(null);
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value && !isInternalChange.current) {
@@ -37,6 +51,17 @@ function RichEditor({ value, onChange, placeholder, rows = 5 }) {
     }
     isInternalChange.current = false;
   }, [value]);
+
+  // Close colour picker on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+        setShowColorPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleInput = () => {
     isInternalChange.current = true;
@@ -49,12 +74,28 @@ function RichEditor({ value, onChange, placeholder, rows = 5 }) {
     onChange(ref.current.innerHTML);
   };
 
+  const applyColor = (color) => {
+    ref.current?.focus();
+    if (color === null) {
+      // Remove colour — wrap in a span with inherited colour
+      document.execCommand("foreColor", false, "#b8ccc0");
+    } else {
+      document.execCommand("foreColor", false, color);
+    }
+    onChange(ref.current.innerHTML);
+    setShowColorPicker(false);
+  };
+
   const tools = [
-    { label: "B", title: "Fett", cmd: "bold", style: { fontWeight: 700 } },
-    { label: "I", title: "Kursiv", cmd: "italic", style: { fontStyle: "italic" } },
-    { label: "U", title: "Unterstrichen", cmd: "underline", style: { textDecoration: "underline" } },
-    { label: "•", title: "Aufzählung", cmd: "insertUnorderedList", style: {} },
-    { label: "—", title: "Trennlinie", cmd: null, action: () => exec("insertHTML", "<hr style='border:none;border-top:1px solid #2a4a38;margin:0.5rem 0;'>"), style: {} },
+    { label: "B",  title: "Fett",         cmd: "bold",                  style: { fontWeight: 700 } },
+    { label: "I",  title: "Kursiv",        cmd: "italic",                style: { fontStyle: "italic" } },
+    { label: "U",  title: "Unterstrichen", cmd: "underline",             style: { textDecoration: "underline" } },
+    { label: "•",  title: "Aufzählung",    cmd: "insertUnorderedList",   style: {} },
+    { label: "⇥",  title: "Einrücken",     cmd: "indent",                style: { fontSize: "0.9rem" } },
+    { label: "⇤",  title: "Ausrücken",     cmd: "outdent",               style: { fontSize: "0.9rem" } },
+    { label: "—",  title: "Trennlinie",    cmd: null,
+      action: () => exec("insertHTML", "<hr style='border:none;border-top:1px solid #2a4a38;margin:0.5rem 0;'>"),
+      style: {} },
   ];
 
   return (
@@ -65,7 +106,64 @@ function RichEditor({ value, onChange, placeholder, rows = 5 }) {
             onMouseDown={e => { e.preventDefault(); t.action ? t.action() : exec(t.cmd); }}
             style={t.style}>{t.label}</button>
         ))}
+
+        {/* Colour picker trigger */}
+        <div ref={colorPickerRef} style={{ position: "relative", display: "inline-block" }}>
+          <button
+            title="Schriftfarbe"
+            className="rich-tool-btn"
+            onMouseDown={e => { e.preventDefault(); setShowColorPicker(v => !v); }}
+            style={{ gap: "0.25rem", minWidth: "2.4rem" }}
+          >
+            <span style={{ fontSize: "0.75rem" }}>A</span>
+            <span style={{
+              width: "8px", height: "8px", borderRadius: "50%",
+              background: "linear-gradient(135deg, #7ec8a0, #c8a840, #c87e7e)",
+              flexShrink: 0, display: "inline-block"
+            }} />
+          </button>
+
+          {showColorPicker && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100,
+              background: "#0a1510", border: "1px solid #2a5a3a",
+              borderRadius: "3px", padding: "0.5rem",
+              boxShadow: "0 6px 24px rgba(0,0,0,0.6)",
+              display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.3rem",
+              minWidth: "140px",
+            }}>
+              {FONT_COLORS.map(c => (
+                <button
+                  key={c.label}
+                  title={c.label}
+                  onMouseDown={e => { e.preventDefault(); applyColor(c.value); }}
+                  style={{
+                    background: "#0e2018", border: "1px solid #1a3028",
+                    borderRadius: "2px", cursor: "pointer",
+                    padding: "0.25rem 0.3rem",
+                    display: "flex", alignItems: "center", gap: "0.3rem",
+                    transition: "all 0.12s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = "#4a9a70"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = "#1a3028"}
+                >
+                  <span style={{
+                    width: "10px", height: "10px", borderRadius: "50%",
+                    background: c.swatch, flexShrink: 0,
+                    border: c.value === null ? "1px solid #3a6a4a" : "none",
+                  }} />
+                  <span style={{
+                    fontFamily: "'Cinzel', serif", fontSize: "0.38rem",
+                    letterSpacing: "0.08em", color: c.swatch, whiteSpace: "nowrap",
+                    textTransform: "uppercase",
+                  }}>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
       <div
         ref={ref}
         className="rich-content"
@@ -154,7 +252,6 @@ export default function WitchlightHoardChronik() {
     { id: "sonstiges",label: "Sonstiges", icon: "🔮" },
   ];
 
-  // ── Load all shared data — wth- keys, never touches Witchlight M ──
   useEffect(() => {
     (async () => {
       const pairs = [
@@ -205,7 +302,6 @@ export default function WitchlightHoardChronik() {
     ureact(u);
   };
 
-  // ── Actions ──
   const addRecap = () => {
     if (!recapForm.title.trim() || !recapForm.text.trim()) return;
     if (editingRecap) {
@@ -313,7 +409,6 @@ export default function WitchlightHoardChronik() {
         ::-webkit-scrollbar-track { background: #080f0c; }
         ::-webkit-scrollbar-thumb { background: #1a3028; border-radius: 2px; }
 
-        /* ── Header ── */
         .hdr {
           background: #060d09;
           border-bottom: 1px solid #1a3028;
@@ -326,7 +421,6 @@ export default function WitchlightHoardChronik() {
           font-size: clamp(1rem, 4vw, 1.5rem);
           font-weight: 700; font-style: italic;
           color: #7ec8a0; margin: 0; letter-spacing: 0.02em;
-          text-shadow: 0 0 30px rgba(126,200,160,0.3), 0 0 60px rgba(126,200,160,0.1);
           animation: forestGlow 4s ease-in-out infinite;
         }
         @keyframes forestGlow {
@@ -353,7 +447,6 @@ export default function WitchlightHoardChronik() {
         }
         .player-chip:hover { color: #5a9a70; }
 
-        /* ── Tabs ── */
         .tab-row {
           display: flex; gap: 0; overflow-x: auto; scrollbar-width: none;
           border-top: 1px solid rgba(126,200,160,0.08);
@@ -371,10 +464,8 @@ export default function WitchlightHoardChronik() {
         .tab-btn:hover:not(.active) { color: #4a7a58; }
         .tab-icon { font-size: 1rem; }
 
-        /* ── Page ── */
         .page { padding: 1.2rem; max-width: 680px; margin: 0 auto; }
 
-        /* ── Cards ── */
         .card {
           background: #0a1510; border: 1px solid #152518;
           border-radius: 4px; padding: 1rem 1.2rem; margin-bottom: 0.7rem;
@@ -410,7 +501,6 @@ export default function WitchlightHoardChronik() {
           white-space: pre-wrap;
         }
 
-        /* ── Reactions ── */
         .reactions-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.8rem; align-items: center; }
         .react-btn {
           background: rgba(126,200,160,0.06); border: 1px solid #1a3028;
@@ -431,7 +521,6 @@ export default function WitchlightHoardChronik() {
         }
         .add-react-btn:hover { opacity: 1; background: rgba(126,200,160,0.06); transform: scale(1.1); }
 
-        /* ── NPC grid ── */
         .npc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
         .npc-card {
           background: #0a1510; border: 1px solid #152518;
@@ -457,7 +546,6 @@ export default function WitchlightHoardChronik() {
         }
         .npc-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 0.3rem; }
 
-        /* ── NPC detail ── */
         .npc-detail {
           background: #0a1510; border: 1px solid #1a3028;
           border-radius: 4px; padding: 1.2rem; margin-bottom: 0.8rem;
@@ -490,7 +578,6 @@ export default function WitchlightHoardChronik() {
           letter-spacing: 0.1em; text-transform: uppercase; color: #2a4a38; margin-top: 0.2rem;
         }
 
-        /* ── Quest list ── */
         .quest-card {
           background: #0a1510; border: 1px solid #152518;
           border-radius: 2px; padding: 0.8rem 1rem; margin-bottom: 0.5rem;
@@ -517,7 +604,6 @@ export default function WitchlightHoardChronik() {
           border: 1px dashed #2a4a38; padding: 0.1rem 0.35rem; border-radius: 1px; margin-left: 0.4rem;
         }
 
-        /* ── Quote wall ── */
         .quotes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.8rem; }
         .quote-card {
           background: #0a1510; border: 1px solid #152518;
@@ -543,7 +629,6 @@ export default function WitchlightHoardChronik() {
         }
         .quote-del:hover { color: #c87e7e; }
 
-        /* ── Snippet cards ── */
         .snippet-card {
           background: #0a1510; border: 1px solid #152518;
           border-radius: 2px; padding: 1.2rem 1.4rem; margin-bottom: 0.8rem;
@@ -562,7 +647,6 @@ export default function WitchlightHoardChronik() {
           text-transform: uppercase; color: #1a3028; margin-top: 0.7rem;
         }
 
-        /* ── Player note cards ── */
         .pnote-card {
           background: #0a1510; border: 1px solid #152518;
           border-left: 2px solid #4a9a70;
@@ -578,7 +662,6 @@ export default function WitchlightHoardChronik() {
           letter-spacing: 0.1em; color: #1a3028; margin-top: 0.25rem;
         }
 
-        /* ── Forms ── */
         .form-panel {
           background: #0a1510; border: 1px solid #1a3028;
           border-radius: 2px; padding: 1rem 1.2rem; margin-bottom: 1rem;
@@ -608,7 +691,6 @@ export default function WitchlightHoardChronik() {
         .f-row { display: grid; grid-template-columns: 1fr 2fr; gap: 0.6rem; }
         .f-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
 
-        /* ── Buttons ── */
         .btn-primary {
           font-family: 'Cinzel', serif; font-size: 0.7rem; font-weight: 700;
           letter-spacing: 0.2em; text-transform: uppercase; color: #080f0c;
@@ -658,6 +740,7 @@ export default function WitchlightHoardChronik() {
         .rich-toolbar {
           display: flex; gap: 0.2rem; padding: 0.4rem 0.5rem;
           background: #0a1510; border-bottom: 1px solid #1a3028; flex-wrap: wrap;
+          align-items: center;
         }
         .rich-tool-btn {
           font-family: 'Cinzel', serif; font-size: 0.7rem; min-width: 1.8rem; height: 1.8rem;
@@ -673,11 +756,14 @@ export default function WitchlightHoardChronik() {
         }
         .rich-content:empty:before { content: attr(data-placeholder); color: #1a3028; font-style: italic; pointer-events: none; }
         .rich-content ul { margin: 0.3rem 0 0.3rem 1.2rem; padding: 0; }
+        .rich-content ul ul { margin: 0.15rem 0 0.15rem 1.4rem; }
+        .rich-content ul ul ul { margin: 0.1rem 0 0.1rem 1.4rem; }
         .rich-content li { margin-bottom: 0.2rem; }
         .rich-content b, .rich-content strong { color: #c8dcd2; }
         .rich-content em, .rich-content i { color: #7ec8a0; }
         .rich-content hr { border: none; border-top: 1px solid #1a3028; margin: 0.5rem 0; }
         .narrative ul { margin: 0.3rem 0 0.3rem 1.2rem; padding: 0; }
+        .narrative ul ul { margin: 0.15rem 0 0.15rem 1.4rem; }
         .narrative li { margin-bottom: 0.2rem; }
         .narrative b, .narrative strong { color: #c8dcd2; }
         .narrative em, .narrative i { color: #7ec8a0; }
@@ -785,7 +871,6 @@ export default function WitchlightHoardChronik() {
         }
         .fund-type-opt.selected { border-color: #4a9a70; color: #7ec8a0; background: #0e2018; }
 
-        /* ── Misc ── */
         .empty {
           text-align: center; padding: 3rem 1.5rem;
           font-family: 'Crimson Pro', serif; font-style: italic;
@@ -1297,4 +1382,5 @@ export default function WitchlightHoardChronik() {
       )}
     </div>
   );
+}
 }
