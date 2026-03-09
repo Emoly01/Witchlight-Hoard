@@ -1383,4 +1383,3 @@ export default function WitchlightHoardChronik() {
     </div>
   );
 }
-
