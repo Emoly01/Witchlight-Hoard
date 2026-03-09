@@ -552,7 +552,7 @@ export default function WitchlightHoardChronik() {
           box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
         .npc-detail-img {
-          width: 100%; max-height: 120px; object-fit: cover; object-position: top;
+          width: 100%; max-height: 280px; object-fit: contain;
           border-radius: 2px; margin-bottom: 0.8rem;
           background: linear-gradient(135deg, #0e2018, #0a1a12);
           display: flex; align-items: center; justify-content: center;
