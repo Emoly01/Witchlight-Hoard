@@ -552,11 +552,11 @@ export default function WitchlightHoardChronik() {
           box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
         .npc-detail-img {
-          width: 100%; max-height: 200px; object-fit: cover;
+          width: 100%; max-height: 120px; object-fit: cover; object-position: top;
           border-radius: 2px; margin-bottom: 0.8rem;
           background: linear-gradient(135deg, #0e2018, #0a1a12);
           display: flex; align-items: center; justify-content: center;
-          font-size: 3rem; color: #2a4a38; min-height: 80px;
+          font-size: 3rem; color: #2a4a38; min-height: 60px;
         }
         .npc-detail-name {
           font-family: 'Playfair Display', serif; font-size: 1.1rem;
@@ -1246,7 +1246,22 @@ export default function WitchlightHoardChronik() {
                   ? <img src={n.imageUrl} alt={n.name} className="npc-detail-img" onError={e => { e.target.style.display="none"; }} />
                   : <div className="npc-detail-img">👤</div>
                 }
-                {n.description && <p className="npc-desc">{n.description}</p>}
+                {gmMode
+                  ? n.description && <p className="npc-desc">{n.description}</p>
+                  : <div className="f-group" style={{marginBottom:"0.6rem"}}>
+                      <label className="f-label" style={{marginBottom:"0.25rem"}}>Beschreibung</label>
+                      <textarea className="f-input" rows={3}
+                        defaultValue={n.description || ""}
+                        onBlur={e => {
+                          const updated = e.target.value.trim();
+                          if (updated !== (n.description || "").trim()) {
+                            un(npcs.map(x => x.id === n.id ? { ...x, description: updated } : x));
+                          }
+                        }}
+                        placeholder="Was wissen die Spieler über diese Person..."
+                      />
+                    </div>
+                }
                 {gmMode && n.notes && <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.5rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a5a38",marginBottom:"0.3rem",marginTop:"0.5rem"}}>GM-Notiz: <span style={{fontFamily:"'Crimson Pro',serif",fontStyle:"italic",fontSize:"0.8rem",letterSpacing:0,textTransform:"none",color:"#4a7a58"}}>{n.notes}</span></p>}
                 <div className="divider" />
                 <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.5rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"#2a4a38",marginBottom:"0.5rem"}}>Spieler-Eindrücke</p>
