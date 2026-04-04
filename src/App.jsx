@@ -1317,7 +1317,7 @@ export default function WitchlightHoardChronik() {
                   ? n.description && <p className="npc-desc">{n.description}</p>
                   : <div className="f-group" style={{marginBottom:"0.6rem"}}>
                       <label className="f-label" style={{marginBottom:"0.25rem"}}>Beschreibung</label>
-                      <textarea className="f-input" rows={3}
+                      <textarea key={n.id} className="f-input" rows={3}
                         defaultValue={n.description || ""}
                         onBlur={e => { const updated = e.target.value.trim(); if (updated !== (n.description || "").trim()) { un(npcs.map(x => x.id === n.id ? { ...x, description: updated } : x)); } }}
                         placeholder="Was wissen die Spieler über diese Person..." />
