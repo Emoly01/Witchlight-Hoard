@@ -156,6 +156,47 @@ const NPC_LOCATIONS = [
   { id: "unbekannt",  label: "Unbekannt",        icon: "❓" },
 ];
 
+const NPC_SORT_OPTIONS = [
+  { id: "alpha",  label: "A → Z",     icon: "🔤" },
+  { id: "alpha-r",label: "Z → A",     icon: "🔤" },
+  { id: "status", label: "Status",    icon: "💚" },
+  { id: "newest", label: "Neueste",   icon: "🕐" },
+  { id: "oldest", label: "Älteste",   icon: "🕐" },
+];
+
+const STATUS_ORDER = ["lebendig", "vermisst", "unbekannt", "tot"];
+
+function sortNpcs(npcs, sortBy) {
+  const sorted = [...npcs];
+  switch (sortBy) {
+    case "alpha":
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    case "alpha-r":
+      return sorted.sort((a, b) => b.name.localeCompare(a.name, "de"));
+    case "status":
+      return sorted.sort((a, b) => {
+        const ai = STATUS_ORDER.indexOf(a.status || "unbekannt");
+        const bi = STATUS_ORDER.indexOf(b.status || "unbekannt");
+        if (ai !== bi) return ai - bi;
+        return a.name.localeCompare(b.name, "de");
+      });
+    case "newest":
+      return sorted.sort((a, b) => {
+        const ta = typeof a.id === "string" ? parseInt(a.id.split("").slice(0, 8).join(""), 36) : 0;
+        const tb = typeof b.id === "string" ? parseInt(b.id.split("").slice(0, 8).join(""), 36) : 0;
+        return tb - ta;
+      });
+    case "oldest":
+      return sorted.sort((a, b) => {
+        const ta = typeof a.id === "string" ? parseInt(a.id.split("").slice(0, 8).join(""), 36) : 0;
+        const tb = typeof b.id === "string" ? parseInt(b.id.split("").slice(0, 8).join(""), 36) : 0;
+        return ta - tb;
+      });
+    default:
+      return sorted;
+  }
+}
+
 const GM_CATEGORIES = [
   { id: "plan",    label: "Planung",   color: "#7eb8c8", icon: "📋" },
   { id: "secret",  label: "Geheimnis", color: "#7ec8a0", icon: "🔐" },
@@ -187,13 +228,26 @@ export default function WitchlightHoardChronik() {
   const [reactions, setReactions] = useState({});
   const [fundstucke, setFundstucke] = useState([]);
   const [gmNotes, setGmNotes] = useState([]);
+  const [theories, setTheories] = useState([]);
 
   const [expanded, setExpanded] = useState({});
   const [expandedNpc, setExpandedNpc] = useState(null);
   const [npcLocation, setNpcLocation] = useState("all");
   const [npcSearch, setNpcSearch] = useState("");
+  const [npcSort, setNpcSort] = useState("alpha");
   const [expandedFund, setExpandedFund] = useState(null);
   const [expandedGmNote, setExpandedGmNote] = useState(null);
+
+  // ── Ref for NPC detail scroll ──
+  const npcDetailRef = useRef(null);
+
+  useEffect(() => {
+    if (expandedNpc && npcDetailRef.current) {
+      setTimeout(() => {
+        npcDetailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  }, [expandedNpc]);
 
   // ── GM forms ──
   const [recapForm, setRecapForm] = useState({ date: "", title: "", text: "" });
@@ -224,6 +278,23 @@ export default function WitchlightHoardChronik() {
   const [playerSnippetForm, setPlayerSnippetForm] = useState({ title: "", text: "" });
   const [showPlayerSnippetForm, setShowPlayerSnippetForm] = useState(false);
 
+  // ── Theorien ──
+  const [theoryForm, setTheoryForm] = useState({ title: "", text: "", category: "plot" });
+  const [showTheoryForm, setShowTheoryForm] = useState(false);
+  const [editingTheory, setEditingTheory] = useState(null);
+
+  const THEORY_CATEGORIES = [
+    { id: "plot",    label: "Plot-Theorie",   icon: "🔮", color: "#b87ec8" },
+    { id: "npc",     label: "NPC-Theorie",    icon: "👤", color: "#7eb8c8" },
+    { id: "ort",     label: "Ort / Geheimnis",icon: "🗝",  color: "#c8a840" },
+    { id: "wild",    label: "Wildes Gerücht", icon: "🌪", color: "#c87e7e" },
+  ];
+  const THEORY_REACTS = [
+    { emoji: "👍", label: "Glaub ich auch" },
+    { emoji: "👎", label: "Glaub ich nicht" },
+    { emoji: "🤯", label: "Whoa" },
+  ];
+
   // ── Fundstücke ──
   const [fundForm, setFundForm] = useState({ type: "brief", title: "", text: "", imageUrl: "" });
   const [showFundForm, setShowFundForm] = useState(false);
@@ -249,6 +320,7 @@ export default function WitchlightHoardChronik() {
         ["wth-s-reactions",   setReactions,   {}],
         ["wth-s-fundstucke",  setFundstucke,  []],
         ["wth-s-gmnotes",     setGmNotes,     []],
+        ["wth-s-theories",    setTheories,    []],
       ];
       for (const [key, setter, def] of pairs) {
         try { const r = await storage.get(key); setter(JSON.parse(r.value)); }
@@ -268,6 +340,7 @@ export default function WitchlightHoardChronik() {
   const ureact = (u) => { setReactions(u); ss("wth-s-reactions",   u); };
   const uf   = (u) => { setFundstucke(u);  ss("wth-s-fundstucke",  u); };
   const ugn  = (u) => { setGmNotes(u);     ss("wth-s-gmnotes",     u); };
+  const uth  = (u) => { setTheories(u);    ss("wth-s-theories",    u); };
 
   const pin = () => { try { return localStorage.getItem("wth-gm-pin") || DEFAULT_PIN; } catch { return DEFAULT_PIN; } };
   const tryPin = () => {
@@ -398,6 +471,28 @@ export default function WitchlightHoardChronik() {
 
   const needName = () => { setShowNamePrompt(true); setNameInput(playerName); };
 
+  // ── Theory functions ──
+  const addTheory = () => {
+    if (!theoryForm.title.trim() || !playerName) return;
+    if (editingTheory) {
+      uth(theories.map(t => t.id === editingTheory ? { ...t, title: theoryForm.title.trim(), text: theoryForm.text, category: theoryForm.category } : t));
+      setEditingTheory(null);
+    } else {
+      uth([{ id: makeId(), title: theoryForm.title.trim(), text: theoryForm.text, category: theoryForm.category, author: playerName, ts: Date.now(), reacts: {} }, ...theories]);
+    }
+    setTheoryForm({ title: "", text: "", category: "plot" }); setShowTheoryForm(false);
+  };
+
+  const reactTheory = (theoryId, emoji) => {
+    uth(theories.map(t => {
+      if (t.id !== theoryId) return t;
+      const reacts = { ...(t.reacts || {}) };
+      const key = `${emoji}`;
+      reacts[key] = (reacts[key] || 0) + 1;
+      return { ...t, reacts };
+    }));
+  };
+
   const tabs = [
     { id: "chronik",     icon: "📖", label: "Chronik" },
     { id: "spieler",     icon: "✦",  label: "Spieler" },
@@ -472,6 +567,7 @@ export default function WitchlightHoardChronik() {
         .npc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.8rem; }
         .npc-card { background: #0a1510; border: 1px solid #152518; border-radius: 4px; overflow: hidden; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         .npc-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4), 0 0 15px rgba(126,200,160,0.08); }
+        .npc-card.selected { border-color: #4a9a70; box-shadow: 0 4px 16px rgba(126,200,160,0.15); }
         .npc-img { width: 100%; height: 180px; background: linear-gradient(135deg, #0e2018, #0a1a12); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #2a4a38; overflow: hidden; }
         .npc-img img { width: 100%; height: 100%; object-fit: contain; object-position: center top; }
         .npc-card-body { padding: 0.6rem 0.7rem; }
@@ -479,7 +575,7 @@ export default function WitchlightHoardChronik() {
         .npc-card-faction { font-family: 'Crimson Pro', serif; font-style: italic; font-size: 0.88rem; color: #4a7a58; margin: 0; }
         .npc-status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 0.3rem; }
 
-        .npc-detail { background: #0a1510; border: 1px solid #1a3028; border-radius: 4px; padding: 1.2rem; margin-bottom: 0.8rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .npc-detail { background: #0a1510; border: 1px solid #1a3028; border-radius: 4px; padding: 1.2rem; margin-bottom: 0.8rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); scroll-margin-top: 120px; }
         .npc-detail-img { width: 100%; max-height: 280px; object-fit: contain; border-radius: 2px; margin-bottom: 0.8rem; background: linear-gradient(135deg, #0e2018, #0a1a12); display: block; }
         .npc-detail-img-placeholder { width: 100%; height: 80px; background: linear-gradient(135deg, #0e2018, #0a1a12); border-radius: 2px; margin-bottom: 0.8rem; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #2a4a38; }
         .npc-detail-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: #c8dcd2; margin: 0 0 0.2rem; }
@@ -518,6 +614,23 @@ export default function WitchlightHoardChronik() {
         .pnote-author { font-family: 'Cinzel', serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #5aaa78; margin: 0 0 0.3rem; }
         .pnote-text { font-size: 1rem; color: #7a9a85; line-height: 1.6; margin: 0; }
         .pnote-date { font-family: 'Cinzel', serif; font-size: 0.55rem; letter-spacing: 0.1em; color: #1a3028; margin-top: 0.25rem; }
+
+        /* ── Theorien ── */
+        .theory-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #1a3028; }
+        .theory-card { background: #0a1510; border: 1px solid #152518; border-radius: 4px; padding: 1rem 1.2rem; margin-bottom: 0.7rem; box-shadow: 0 2px 10px rgba(0,0,0,0.3); transition: box-shadow 0.15s; position: relative; overflow: hidden; }
+        .theory-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(126,200,160,0.15), transparent); }
+        .theory-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .theory-cat-badge { font-family: 'Cinzel', serif; font-size: 0.38rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 1px; border: 1px solid; display: inline-flex; align-items: center; gap: 0.2rem; }
+        .theory-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; font-style: italic; color: #c8dcd2; margin: 0.4rem 0 0.2rem; line-height: 1.3; }
+        .theory-text { font-family: 'Crimson Pro', serif; font-size: 0.9rem; color: #7a9a85; line-height: 1.7; margin: 0 0 0.5rem; font-style: italic; }
+        .theory-author { font-family: 'Cinzel', serif; font-size: 0.42rem; letter-spacing: 0.1em; text-transform: uppercase; color: #2a4a38; }
+        .theory-react-row { display: flex; gap: 0.4rem; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px dashed #1a3028; align-items: center; flex-wrap: wrap; }
+        .theory-react-btn { background: rgba(126,200,160,0.06); border: 1px solid #1a3028; border-radius: 20px; padding: 0.25rem 0.55rem; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem; transition: all 0.15s; }
+        .theory-react-btn:hover { background: rgba(126,200,160,0.12); border-color: #3a7a58; transform: scale(1.05); }
+        .theory-react-count { font-family: 'Cinzel', serif; font-size: 0.48rem; color: #5aaa78; min-width: 0.6rem; text-align: center; }
+        .theory-cat-picker { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+        .theory-cat-opt { font-family: 'Cinzel', serif; font-size: 0.45rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.6rem; border: 1px solid #1a3028; border-radius: 1px; cursor: pointer; color: #3a6a4a; background: #0a1510; transition: all 0.12s; display: flex; align-items: center; gap: 0.2rem; }
+        .theory-cat-opt.selected { border-color: #4a9a70; color: #7ec8a0; background: #0e2018; }
 
         .form-panel { background: #0a1510; border: 1px solid #1a3028; border-radius: 2px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
         .form-title { font-family: 'Cinzel', serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #5aaa78; margin: 0 0 0.8rem; }
@@ -565,17 +678,22 @@ export default function WitchlightHoardChronik() {
         .narrative b, .narrative strong { color: #c8dcd2; }
         .narrative em, .narrative i { color: #7ec8a0; }
 
-        /* ── NPC location tabs + search ── */
+        /* ── NPC location tabs + search + sort ── */
         .npc-loc-tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; margin-bottom: 0.8rem; background: rgba(126,200,160,0.04); border: 1px solid #1a3028; border-radius: 4px; padding: 0.2rem; flex-wrap: nowrap; }
         .npc-loc-tabs::-webkit-scrollbar { display: none; }
         .npc-loc-tab { font-family: 'Cinzel', serif; font-size: 0.42rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.4rem 0.7rem; background: none; border: none; cursor: pointer; color: #2a5a38; white-space: nowrap; border-radius: 3px; transition: all 0.15s; display: flex; align-items: center; gap: 0.25rem; }
         .npc-loc-tab.active { background: rgba(126,200,160,0.1); color: #7ec8a0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
         .npc-loc-tab:hover:not(.active) { color: #5aaa78; background: rgba(126,200,160,0.06); }
-        .npc-search-wrap { position: relative; margin-bottom: 0.8rem; }
+        .npc-controls-row { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; }
+        .npc-search-wrap { position: relative; flex: 1; min-width: 160px; }
         .npc-search-input { width: 100%; background: #080f0c; border: 1px solid #1a3028; border-radius: 20px; padding: 0.5rem 0.8rem 0.5rem 2rem; font-family: 'Crimson Pro', serif; font-size: 0.9rem; color: #c8dcd2; outline: none; transition: border-color 0.15s; }
         .npc-search-input:focus { border-color: #4a9a70; }
         .npc-search-input::placeholder { color: #2a4a38; font-style: italic; }
         .npc-search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: #2a4a38; font-size: 0.85rem; pointer-events: none; }
+        .npc-sort-wrap { display: flex; gap: 0; background: rgba(126,200,160,0.04); border: 1px solid #1a3028; border-radius: 4px; padding: 0.15rem; flex-shrink: 0; }
+        .npc-sort-btn { font-family: 'Cinzel', serif; font-size: 0.4rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.35rem 0.55rem; background: none; border: none; cursor: pointer; color: #2a5a38; white-space: nowrap; border-radius: 3px; transition: all 0.15s; display: flex; align-items: center; gap: 0.2rem; }
+        .npc-sort-btn.active { background: rgba(126,200,160,0.1); color: #7ec8a0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        .npc-sort-btn:hover:not(.active) { color: #5aaa78; background: rgba(126,200,160,0.06); }
 
         /* ── Inline impression edit ── */
         .impression-edit-row { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
@@ -792,6 +910,84 @@ export default function WitchlightHoardChronik() {
                 <p className="pnote-date">{formatDate(n.ts)}</p>
               </div>
             ))}
+
+          {/* ── Gerüchte & Theorien ── */}
+          <div className="theory-section">
+            <div className="section-hdr">
+              <p className="section-title">💡 Gerüchte & Theorien</p>
+              {playerName && <button className="btn-add" onClick={() => { setShowTheoryForm(v => !v); setEditingTheory(null); setTheoryForm({ title: "", text: "", category: "plot" }); }}>+ Neue Theorie</button>}
+            </div>
+
+            {showTheoryForm && playerName && (
+              <div className="form-panel">
+                <p className="form-title">{editingTheory ? "Theorie bearbeiten" : `Neue Theorie — ${playerName}`}</p>
+                <div className="f-group">
+                  <label className="f-label">Kategorie</label>
+                  <div className="theory-cat-picker">
+                    {THEORY_CATEGORIES.map(c => (
+                      <span key={c.id} className={`theory-cat-opt ${theoryForm.category === c.id ? "selected" : ""}`}
+                        onClick={() => setTheoryForm(f => ({...f, category: c.id}))}>
+                        {c.icon} {c.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="f-group"><label className="f-label">These / Gerücht</label>
+                  <input className="f-input" value={theoryForm.title} onChange={e => setTheoryForm(f=>({...f,title:e.target.value}))} placeholder="z.B. Kettlesteam weiß mehr als er zugibt..." autoFocus /></div>
+                <div className="f-group"><label className="f-label">Begründung (optional)</label>
+                  <RichEditor value={theoryForm.text} onChange={v => setTheoryForm(f=>({...f,text:v}))} placeholder="Warum glaubst du das? Was sind die Hinweise?" rows={3} /></div>
+                <div className="f-actions">
+                  <button className="btn-primary" onClick={addTheory} disabled={!theoryForm.title.trim() || !playerName}>{editingTheory ? "Speichern" : "Theorie posten"}</button>
+                  <button className="btn-secondary" onClick={() => { setShowTheoryForm(false); setEditingTheory(null); setTheoryForm({ title: "", text: "", category: "plot" }); }}>Abbrechen</button>
+                </div>
+              </div>
+            )}
+
+            {theories.length === 0
+              ? <div className="empty" style={{paddingTop:"1rem",paddingBottom:"1rem"}}>Noch keine Theorien.<br /><span style={{fontSize:"0.85rem"}}>Was glaubt ihr, was hier wirklich vor sich geht? 💡</span></div>
+              : theories.map(t => {
+                const cat = THEORY_CATEGORIES.find(c => c.id === t.category);
+                const canEdit = t.author === playerName;
+                const reacts = t.reacts || {};
+                return (
+                  <div key={t.id} className="theory-card">
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <span className="theory-cat-badge" style={{color:cat?.color||"#7ec8a0",borderColor:cat?.color||"#7ec8a0"}}>
+                        {cat?.icon} {cat?.label}
+                      </span>
+                      <div style={{display:"flex",gap:"0.3rem",alignItems:"center"}}>
+                        {canEdit && (
+                          <button className="card-act-edit" onClick={() => {
+                            setTheoryForm({ title: t.title, text: t.text || "", category: t.category });
+                            setEditingTheory(t.id); setShowTheoryForm(true);
+                          }}>✎</button>
+                        )}
+                        {(canEdit || gmMode) && (
+                          <button className="btn-danger" onClick={() => uth(theories.filter(x => x.id !== t.id))}>✕</button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="theory-title">{t.title}</p>
+                    {t.text && <div className="theory-text" dangerouslySetInnerHTML={{ __html: t.text }} />}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"0.3rem"}}>
+                      <p className="theory-author">— {t.author} · {formatDate(t.ts)}</p>
+                    </div>
+                    <div className="theory-react-row">
+                      {THEORY_REACTS.map(r => {
+                        const count = reacts[r.emoji] || 0;
+                        return (
+                          <button key={r.emoji} className="theory-react-btn" title={r.label}
+                            onClick={() => reactTheory(t.id, r.emoji)}>
+                            <span>{r.emoji}</span>
+                            {count > 0 && <span className="theory-react-count">{count}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
         </div>
       )}
 
@@ -1011,12 +1207,48 @@ export default function WitchlightHoardChronik() {
             </div>
           )}
 
-          {/* NPC detail card */}
+          {/* Location tabs */}
+          {npcs.length > 0 && (
+            <div className="npc-loc-tabs">
+              {NPC_LOCATIONS.map(l => {
+                const count = l.id === "all" ? npcs.length : npcs.filter(n => (n.location || "unbekannt") === l.id).length;
+                if (l.id !== "all" && count === 0) return null;
+                return (
+                  <button key={l.id} className={`npc-loc-tab ${npcLocation === l.id ? "active" : ""}`} onClick={() => setNpcLocation(l.id)}>
+                    <span>{l.icon}</span>{l.label}
+                    <span style={{fontFamily:"'Cinzel',serif",fontSize:"0.38rem",opacity:0.7,marginLeft:"0.15rem"}}>({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Search + Sort row */}
+          {npcs.length > 0 && (
+            <div className="npc-controls-row">
+              <div className="npc-search-wrap">
+                <span className="npc-search-icon">🔍</span>
+                <input className="npc-search-input" value={npcSearch}
+                  onChange={e => setNpcSearch(e.target.value)}
+                  placeholder="Nach Name oder Fraktion suchen..." />
+              </div>
+              <div className="npc-sort-wrap">
+                {NPC_SORT_OPTIONS.map(s => (
+                  <button key={s.id} className={`npc-sort-btn ${npcSort === s.id ? "active" : ""}`}
+                    onClick={() => setNpcSort(s.id)} title={s.label}>
+                    <span>{s.icon}</span>{s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* NPC Detail — rendered above the grid, with scroll ref */}
           {expandedNpc && (() => {
             const n = npcs.find(x => x.id === expandedNpc);
             if (!n) return null;
             return (
-              <div className="npc-detail">
+              <div className="npc-detail" ref={npcDetailRef}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.5rem"}}>
                   <div>
                     <p className="npc-detail-name">{n.name}</p>
@@ -1095,37 +1327,12 @@ export default function WitchlightHoardChronik() {
                       disabled={npcImpression.npcId !== n.id || !npcImpression.text.trim()}>✦ Senden</button>
                   </div>
                 )}
-                {/* Close button */}
                 <div style={{marginTop:"1rem",paddingTop:"0.8rem",borderTop:"1px solid #0e2018",textAlign:"center"}}>
                   <button className="btn-secondary" onClick={() => setExpandedNpc(null)}>✕ Schließen</button>
                 </div>
               </div>
             );
           })()}
-
-          {/* Location tabs */}
-          {npcs.length > 0 && (
-            <div className="npc-loc-tabs">
-              {NPC_LOCATIONS.map(l => {
-                const count = l.id === "all" ? npcs.length : npcs.filter(n => (n.location || "unbekannt") === l.id).length;
-                if (l.id !== "all" && count === 0) return null;
-                return (
-                  <button key={l.id} className={`npc-loc-tab ${npcLocation === l.id ? "active" : ""}`} onClick={() => setNpcLocation(l.id)}>
-                    <span>{l.icon}</span>{l.label}
-                    <span style={{fontFamily:"'Cinzel',serif",fontSize:"0.38rem",opacity:0.7,marginLeft:"0.15rem"}}>({count})</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Search */}
-          {npcs.length > 0 && (
-            <div className="npc-search-wrap">
-              <span className="npc-search-icon">🔍</span>
-              <input className="npc-search-input" value={npcSearch} onChange={e => setNpcSearch(e.target.value)} placeholder="Nach Name oder Fraktion suchen..." />
-            </div>
-          )}
 
           {npcs.length === 0
             ? <div className="empty">Noch keine NPCs eingetragen.<br /><span style={{fontSize:"0.85rem"}}>Die Welt füllt sich langsam... 👥</span></div>
@@ -1136,13 +1343,16 @@ export default function WitchlightHoardChronik() {
                 const searchMatch = !q || n.name.toLowerCase().includes(q) || (n.faction||"").toLowerCase().includes(q);
                 return locMatch && searchMatch;
               });
-              if (filtered.length === 0) return (
-                <div className="empty" style={{paddingTop:"1.5rem"}}>Keine NPCs gefunden.<br /><span style={{fontSize:"0.85rem"}}>Versuch eine andere Suche oder einen anderen Ort. ✦</span></div>
+              const sorted = sortNpcs(filtered, npcSort);
+              if (sorted.length === 0) return (
+                <div className="empty" style={{paddingTop:"1.5rem"}}>
+                  Keine NPCs gefunden.<br /><span style={{fontSize:"0.85rem"}}>Versuch eine andere Suche oder einen anderen Ort. ✦</span>
+                </div>
               );
               return (
                 <div className="npc-grid">
-                  {filtered.map(n => (
-                    <div key={n.id} className="npc-card" onClick={() => setExpandedNpc(expandedNpc === n.id ? null : n.id)}>
+                  {sorted.map(n => (
+                    <div key={n.id} className={`npc-card ${expandedNpc === n.id ? "selected" : ""}`} onClick={() => setExpandedNpc(expandedNpc === n.id ? null : n.id)}>
                       <div className="npc-img">
                         {n.imageUrl ? <img src={n.imageUrl} alt={n.name} onError={e => { e.target.style.display="none"; e.target.parentNode.innerHTML="👤"; }} /> : "👤"}
                       </div>
