@@ -42,8 +42,9 @@ const FONT_COLORS = [
 function RichEditor({ value, onChange, placeholder, rows = 5 }) {
   const ref = useRef(null);
   const isInternalChange = useRef(false);
+  const [bubble, setBubble] = useState(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const colorPickerRef = useRef(null);
+  const wrapRef = useRef(null);
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value && !isInternalChange.current) {
@@ -53,13 +54,28 @@ function RichEditor({ value, onChange, placeholder, rows = 5 }) {
   }, [value]);
 
   useEffect(() => {
-    const handler = (e) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
+    const onSelectionChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        setBubble(null);
         setShowColorPicker(false);
+        return;
       }
+      const range = sel.getRangeAt(0);
+      if (!ref.current || !ref.current.contains(range.commonAncestorContainer)) {
+        setBubble(null);
+        setShowColorPicker(false);
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      const wrapRect = wrapRef.current.getBoundingClientRect();
+      setBubble({
+        x: rect.left - wrapRect.left + rect.width / 2,
+        y: rect.top - wrapRect.top,
+      });
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => document.removeEventListener("selectionchange", onSelectionChange);
   }, []);
 
   const handleInput = () => {
@@ -93,36 +109,69 @@ function RichEditor({ value, onChange, placeholder, rows = 5 }) {
   ];
 
   return (
-    <div className="rich-editor-wrap">
-      <div className="rich-toolbar">
-        {tools.map(t => (
-          <button key={t.label} title={t.title} className="rich-tool-btn"
-            onMouseDown={e => { e.preventDefault(); t.action ? t.action() : exec(t.cmd); }}
-            style={t.style}>{t.label}</button>
-        ))}
-        <div ref={colorPickerRef} style={{ position: "relative", display: "inline-block" }}>
-          <button title="Schriftfarbe" className="rich-tool-btn"
-            onMouseDown={e => { e.preventDefault(); setShowColorPicker(v => !v); }}
-            style={{ gap: "0.25rem", minWidth: "2.4rem" }}>
-            <span style={{ fontSize: "0.75rem" }}>A</span>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "linear-gradient(135deg, #7ec8a0, #c8a840, #c87e7e)", flexShrink: 0, display: "inline-block" }} />
-          </button>
-          {showColorPicker && (
-            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100, background: "#0a1510", border: "1px solid #2a5a3a", borderRadius: "3px", padding: "0.5rem", boxShadow: "0 6px 24px rgba(0,0,0,0.6)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.3rem", minWidth: "140px" }}>
-              {FONT_COLORS.map(c => (
-                <button key={c.label} title={c.label}
-                  onMouseDown={e => { e.preventDefault(); applyColor(c.value); }}
-                  style={{ background: "#0e2018", border: "1px solid #1a3028", borderRadius: "2px", cursor: "pointer", padding: "0.25rem 0.3rem", display: "flex", alignItems: "center", gap: "0.3rem", transition: "all 0.12s" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = "#4a9a70"}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = "#1a3028"}>
-                  <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: c.swatch, flexShrink: 0, border: c.value === null ? "1px solid #3a6a4a" : "none" }} />
-                  <span style={{ fontFamily: "'Cinzel', serif", fontSize: "0.38rem", letterSpacing: "0.08em", color: c.swatch, whiteSpace: "nowrap", textTransform: "uppercase" }}>{c.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+    <div ref={wrapRef} className="rich-editor-wrap" style={{ position: "relative" }}>
+      {bubble && (
+        <div
+          style={{
+            position: "absolute",
+            left: bubble.x,
+            top: bubble.y,
+            transform: "translate(-50%, calc(-100% - 8px))",
+            zIndex: 200,
+            background: "#0a1510",
+            border: "1px solid #2a5a3a",
+            borderRadius: "4px",
+            padding: "0.3rem 0.4rem",
+            display: "flex",
+            gap: "0.2rem",
+            alignItems: "center",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            flexWrap: "nowrap",
+            whiteSpace: "nowrap",
+          }}
+          onMouseDown={e => e.preventDefault()}
+        >
+          {tools.map(t => (
+            <button key={t.label} title={t.title} className="rich-tool-btn"
+              onMouseDown={e => { e.preventDefault(); t.action ? t.action() : exec(t.cmd); }}
+              style={t.style}>{t.label}</button>
+          ))}
+          <div style={{ position: "relative", display: "inline-block" }}>
+            <button title="Schriftfarbe" className="rich-tool-btn"
+              onMouseDown={e => { e.preventDefault(); setShowColorPicker(v => !v); }}
+              style={{ gap: "0.25rem", minWidth: "2.4rem" }}>
+              <span style={{ fontSize: "0.75rem" }}>A</span>
+              <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "linear-gradient(135deg, #7ec8a0, #c8a840, #c87e7e)", flexShrink: 0, display: "inline-block" }} />
+            </button>
+            {showColorPicker && (
+              <div style={{
+                position: "absolute", bottom: "calc(100% + 4px)", left: "50%",
+                transform: "translateX(-50%)", zIndex: 300,
+                background: "#0a1510", border: "1px solid #2a5a3a", borderRadius: "3px",
+                padding: "0.5rem", boxShadow: "0 6px 24px rgba(0,0,0,0.6)",
+                display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.3rem", minWidth: "150px",
+              }}>
+                {FONT_COLORS.map(c => (
+                  <button key={c.label} title={c.label}
+                    onMouseDown={e => { e.preventDefault(); applyColor(c.value); }}
+                    style={{ background: "#0e2018", border: "1px solid #1a3028", borderRadius: "2px", cursor: "pointer", padding: "0.25rem 0.3rem", display: "flex", alignItems: "center", gap: "0.3rem", transition: "all 0.12s" }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = "#4a9a70"}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = "#1a3028"}>
+                    <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: c.swatch, flexShrink: 0, border: c.value === null ? "1px solid #3a6a4a" : "none" }} />
+                    <span style={{ fontFamily: "'Cinzel', serif", fontSize: "0.38rem", letterSpacing: "0.08em", color: c.swatch, whiteSpace: "nowrap", textTransform: "uppercase" }}>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={{
+            position: "absolute", bottom: -5, left: "50%", transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: "5px solid transparent", borderRight: "5px solid transparent",
+            borderTop: "5px solid #2a5a3a",
+          }} />
         </div>
-      </div>
+      )}
       <div ref={ref} className="rich-content" contentEditable suppressContentEditableWarning
         onInput={handleInput} data-placeholder={placeholder}
         style={{ minHeight: `${rows * 1.6}rem` }} />
@@ -658,9 +707,9 @@ export default function WitchlightHoardChronik() {
         .card-act-edit:hover { background: #1a3a28; color: #5aaa78; }
 
         /* ── Rich Editor ── */
-        .rich-editor-wrap { border: 1px solid #1a3028; border-radius: 1px; overflow: hidden; background: #080f0c; transition: border-color 0.15s; }
+        .rich-editor-wrap { border: 1px solid #1a3028; border-radius: 1px; overflow: visible; background: #080f0c; transition: border-color 0.15s; }
         .rich-editor-wrap:focus-within { border-color: #4a9a70; }
-        .rich-toolbar { display: flex; gap: 0.2rem; padding: 0.4rem 0.5rem; background: #0a1510; border-bottom: 1px solid #1a3028; flex-wrap: wrap; align-items: center; }
+        .rich-toolbar { display: none; }
         .rich-tool-btn { font-family: 'Cinzel', serif; font-size: 0.7rem; min-width: 1.8rem; height: 1.8rem; background: #0e2018; border: 1px solid #1a3028; color: #5aaa78; cursor: pointer; border-radius: 2px; transition: all 0.12s; display: flex; align-items: center; justify-content: center; padding: 0 0.3rem; }
         .rich-tool-btn:hover { background: #1a3a28; border-color: #4a9a70; }
         .rich-tool-btn:active { transform: scale(0.92); }
