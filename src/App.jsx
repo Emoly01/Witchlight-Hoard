@@ -278,6 +278,9 @@ export default function WitchlightHoardChronik() {
   const [fundstucke, setFundstucke] = useState([]);
   const [gmNotes, setGmNotes] = useState([]);
   const [theories, setTheories] = useState([]);
+  const [pcDossiers, setPcDossiers] = useState([]);
+  const [worldEntries, setWorldEntries] = useState([]);
+  const [quickNotes, setQuickNotes] = useState([]);
 
   const [expanded, setExpanded] = useState({});
   const [expandedNpc, setExpandedNpc] = useState(null);
@@ -313,6 +316,25 @@ export default function WitchlightHoardChronik() {
   const [gmNoteForm, setGmNoteForm] = useState({ title: "", text: "", category: "plan" });
   const [showGmNoteForm, setShowGmNoteForm] = useState(false);
   const [editingGmNote, setEditingGmNote] = useState(null);
+  const [gmPlanTab, setGmPlanTab] = useState("dossiers");
+
+  // ── PC Dossier forms ──
+  const [dossierForm, setDossierForm] = useState({ name: "", imageUrl: "", backstory: "", threads: "", relationships: "", arc: "" });
+  const [showDossierForm, setShowDossierForm] = useState(false);
+  const [editingDossier, setEditingDossier] = useState(null);
+  const [expandedDossier, setExpandedDossier] = useState(null);
+  const [expandedDossierSection, setExpandedDossierSection] = useState({});
+
+  // ── World Entry forms ──
+  const [worldForm, setWorldForm] = useState({ title: "", text: "", type: "ort", imageUrl: "" });
+  const [showWorldForm, setShowWorldForm] = useState(false);
+  const [editingWorld, setEditingWorld] = useState(null);
+  const [expandedWorld, setExpandedWorld] = useState(null);
+  const [worldFilter, setWorldFilter] = useState("all");
+
+  // ── Quick Note forms ──
+  const [qnForm, setQnForm] = useState({ text: "", tag: "" });
+  const [editingQn, setEditingQn] = useState(null);
 
   // ── Player forms ──
   const [noteForm, setNoteForm] = useState("");
@@ -370,6 +392,9 @@ export default function WitchlightHoardChronik() {
         ["wth-s-fundstucke",  setFundstucke,  []],
         ["wth-s-gmnotes",     setGmNotes,     []],
         ["wth-s-theories",    setTheories,    []],
+        ["wth-s-pcdossiers",  setPcDossiers,  []],
+        ["wth-s-worldentries",setWorldEntries,[]],
+        ["wth-s-quicknotes",  setQuickNotes,  []],
       ];
       for (const [key, setter, def] of pairs) {
         try { const r = await storage.get(key); setter(JSON.parse(r.value)); }
@@ -390,6 +415,9 @@ export default function WitchlightHoardChronik() {
   const uf   = (u) => { setFundstucke(u);  ss("wth-s-fundstucke",  u); };
   const ugn  = (u) => { setGmNotes(u);     ss("wth-s-gmnotes",     u); };
   const uth  = (u) => { setTheories(u);    ss("wth-s-theories",    u); };
+  const upd  = (u) => { setPcDossiers(u);  ss("wth-s-pcdossiers",  u); };
+  const uwe  = (u) => { setWorldEntries(u);ss("wth-s-worldentries",u); };
+  const uqn  = (u) => { setQuickNotes(u);  ss("wth-s-quicknotes",  u); };
 
   const pin = () => { try { return localStorage.getItem("wth-gm-pin") || DEFAULT_PIN; } catch { return DEFAULT_PIN; } };
   const tryPin = () => {
@@ -519,6 +547,53 @@ export default function WitchlightHoardChronik() {
   };
 
   const needName = () => { setShowNamePrompt(true); setNameInput(playerName); };
+
+  // ── PC Dossier functions ──
+  const saveDossier = () => {
+    if (!dossierForm.name.trim()) return;
+    if (editingDossier) {
+      upd(pcDossiers.map(d => d.id === editingDossier ? { ...d, ...dossierForm } : d));
+      setEditingDossier(null);
+    } else {
+      upd([...pcDossiers, { id: makeId(), ...dossierForm, ts: Date.now() }]);
+    }
+    setDossierForm({ name: "", imageUrl: "", backstory: "", threads: "", relationships: "", arc: "" });
+    setShowDossierForm(false);
+  };
+
+  const startEditDossier = (d) => {
+    setDossierForm({ name: d.name, imageUrl: d.imageUrl || "", backstory: d.backstory || "", threads: d.threads || "", relationships: d.relationships || "", arc: d.arc || "" });
+    setEditingDossier(d.id); setShowDossierForm(true); setExpandedDossier(null);
+  };
+
+  // ── World Entry functions ──
+  const saveWorldEntry = () => {
+    if (!worldForm.title.trim()) return;
+    if (editingWorld) {
+      uwe(worldEntries.map(w => w.id === editingWorld ? { ...w, ...worldForm } : w));
+      setEditingWorld(null);
+    } else {
+      uwe([{ id: makeId(), ...worldForm, ts: Date.now() }, ...worldEntries]);
+    }
+    setWorldForm({ title: "", text: "", type: "ort", imageUrl: "" });
+    setShowWorldForm(false);
+  };
+
+  // ── Quick Note functions ──
+  const addQuickNote = () => {
+    if (!qnForm.text.trim()) return;
+    if (editingQn) {
+      uqn(quickNotes.map(n => n.id === editingQn ? { ...n, text: qnForm.text.trim(), tag: qnForm.tag.trim() } : n));
+      setEditingQn(null);
+    } else {
+      uqn([{ id: makeId(), text: qnForm.text.trim(), tag: qnForm.tag.trim(), done: false, ts: Date.now() }, ...quickNotes]);
+    }
+    setQnForm({ text: "", tag: "" });
+  };
+
+  const toggleQuickNote = (id) => {
+    uqn(quickNotes.map(n => n.id === id ? { ...n, done: !n.done } : n));
+  };
 
   // ── Theory functions ──
   const addTheory = () => {
@@ -793,6 +868,53 @@ export default function WitchlightHoardChronik() {
         .fund-type-opt.selected { border-color: #4a9a70; color: #7ec8a0; background: #0e2018; }
 
         .empty { text-align: center; padding: 3rem 1.5rem; font-family: 'Crimson Pro', serif; font-style: italic; color: #1a3028; font-size: 1.1rem; line-height: 1.8; }
+
+        /* ── GM Plan Sub-tabs ── */
+        .gm-sub-tabs { display: flex; gap: 0; overflow-x: auto; scrollbar-width: none; margin-bottom: 1.2rem; background: rgba(126,200,160,0.04); border: 1px solid #1a3028; border-radius: 4px; padding: 0.2rem; }
+        .gm-sub-tabs::-webkit-scrollbar { display: none; }
+        .gm-sub-tab { font-family: 'Cinzel', serif; font-size: 0.45rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.5rem 0.8rem; background: none; border: none; cursor: pointer; color: #2a5a38; white-space: nowrap; border-radius: 3px; transition: all 0.15s; display: flex; align-items: center; gap: 0.3rem; flex: 1; justify-content: center; }
+        .gm-sub-tab.active { background: rgba(126,200,160,0.1); color: #7ec8a0; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+        .gm-sub-tab:hover:not(.active) { color: #5aaa78; background: rgba(126,200,160,0.06); }
+        .gm-sub-count { font-size: 0.38rem; opacity: 0.6; }
+
+        /* ── PC Dossiers ── */
+        .dossier-card { background: #0a1510; border: 1px solid #1a3028; border-radius: 4px; padding: 0; margin-bottom: 0.8rem; box-shadow: 0 2px 12px rgba(0,0,0,0.3); overflow: hidden; transition: box-shadow 0.15s; position: relative; }
+        .dossier-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(126,200,160,0.2), transparent); }
+        .dossier-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.4); }
+        .dossier-header { display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem 1rem; cursor: pointer; }
+        .dossier-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #0e2018, #0a1a12); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #2a4a38; flex-shrink: 0; overflow: hidden; border: 2px solid #1a3028; }
+        .dossier-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .dossier-pc-name { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: #c8dcd2; margin: 0; }
+        .dossier-body { border-top: 1px solid #0e2018; }
+        .dossier-section-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 1rem; background: none; border: none; border-bottom: 1px solid #0e1e16; cursor: pointer; transition: background 0.12s; }
+        .dossier-section-btn:hover { background: rgba(126,200,160,0.04); }
+        .dossier-section-btn:last-child { border-bottom: none; }
+        .dossier-section-label { font-family: 'Cinzel', serif; font-size: 0.5rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: flex; align-items: center; gap: 0.3rem; }
+        .dossier-section-chevron { color: #1a3028; font-size: 0.6rem; transition: transform 0.2s; }
+        .dossier-section-chevron.open { transform: rotate(180deg); }
+        .dossier-section-content { padding: 0.6rem 1rem 0.8rem; border-bottom: 1px solid #0e1e16; }
+
+        /* ── World Entries ── */
+        .world-card { background: #0a1510; border: 1px solid #152518; border-radius: 4px; padding: 0.9rem 1rem; margin-bottom: 0.6rem; box-shadow: 0 2px 10px rgba(0,0,0,0.25); cursor: pointer; transition: all 0.15s; }
+        .world-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.35); transform: translateY(-1px); }
+        .world-type-badge { font-family: 'Cinzel', serif; font-size: 0.38rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.12rem 0.4rem; border-radius: 1px; border: 1px solid; display: inline-flex; align-items: center; gap: 0.2rem; }
+        .world-detail { background: #0a1510; border: 1px solid #1a3028; border-radius: 4px; padding: 1.2rem; margin-bottom: 0.8rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: fadeIn 0.2s ease; }
+        .world-filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.8rem; }
+        .world-filter-btn { font-family: 'Cinzel', serif; font-size: 0.42rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.6rem; border: 1px solid #1a3028; border-radius: 1px; cursor: pointer; color: #3a6a4a; background: #0a1510; transition: all 0.12s; display: flex; align-items: center; gap: 0.2rem; }
+        .world-filter-btn.active { border-color: #4a9a70; color: #7ec8a0; background: #0e2018; }
+
+        /* ── Quick Notes ── */
+        .qn-card { display: flex; align-items: flex-start; gap: 0.6rem; background: #0a1510; border: 1px solid #152518; border-radius: 4px; padding: 0.7rem 0.9rem; margin-bottom: 0.4rem; transition: all 0.15s; }
+        .qn-card.done { opacity: 0.45; }
+        .qn-card.done .qn-text { text-decoration: line-through; }
+        .qn-checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #1a3028; background: #080f0c; cursor: pointer; flex-shrink: 0; margin-top: 0.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 0.65rem; color: transparent; }
+        .qn-checkbox:hover { border-color: #4a9a70; }
+        .qn-checkbox.checked { background: linear-gradient(135deg, #4a9a70, #7ec8a0); border-color: #4a9a70; color: #080f0c; }
+        .qn-text { font-size: 0.9rem; color: #7a9a85; line-height: 1.5; flex: 1; }
+        .qn-tag { font-family: 'Cinzel', serif; font-size: 0.38rem; letter-spacing: 0.1em; text-transform: uppercase; color: #3a6a4a; background: rgba(126,200,160,0.06); border: 1px solid #1a3028; padding: 0.1rem 0.35rem; border-radius: 1px; white-space: nowrap; }
+        .qn-date { font-family: 'Cinzel', serif; font-size: 0.38rem; letter-spacing: 0.1em; color: #1a3028; }
+        .qn-input-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+        .qn-input-row .f-input { flex: 1; }
         .divider { border: none; border-top: 1px solid #0e2018; margin: 0.8rem 0; }
         .tag { font-family: 'Cinzel', serif; font-size: 0.4rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.15rem 0.4rem; border-radius: 1px; border: 1px solid; display: inline-block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
@@ -1502,72 +1624,371 @@ export default function WitchlightHoardChronik() {
       {tab === "gmplan" && gmMode && (
         <div className="page">
           <div className="section-hdr">
-            <p className="section-title">🔐 GM-Planung</p>
-            <button className="btn-add" onClick={() => { setShowGmNoteForm(v => !v); setEditingGmNote(null); setGmNoteForm({ title: "", text: "", category: "plan" }); }}>+ Neue Notiz</button>
+            <p className="section-title">🔐 GM-Zentrale</p>
           </div>
-          {showGmNoteForm && (
-            <div className="form-panel">
-              <p className="form-title">{editingGmNote ? "Notiz bearbeiten" : "Neue GM-Notiz"}</p>
-              <div className="f-group"><label className="f-label">Kategorie</label>
-                <div className="cat-picker">
-                  {GM_CATEGORIES.map(c => (
-                    <span key={c.id} className={`cat-opt ${gmNoteForm.category === c.id ? "selected" : ""}`} onClick={() => setGmNoteForm(f => ({...f, category: c.id}))}>
-                      {c.icon} {c.label}
-                    </span>
-                  ))}
+
+          {/* Sub-navigation */}
+          <div className="gm-sub-tabs">
+            {[
+              { id: "dossiers", icon: "👤", label: "PC Dossiers", count: pcDossiers.length },
+              { id: "world",    icon: "🌍", label: "Weltenarchiv", count: worldEntries.length },
+              { id: "quick",    icon: "📝", label: "Quick Notes", count: quickNotes.filter(n=>!n.done).length },
+              { id: "legacy",   icon: "📋", label: "Notizen", count: gmNotes.length },
+            ].map(t => (
+              <button key={t.id} className={`gm-sub-tab ${gmPlanTab === t.id ? "active" : ""}`}
+                onClick={() => setGmPlanTab(t.id)}>
+                <span>{t.icon}</span>{t.label}
+                {t.count > 0 && <span className="gm-sub-count">({t.count})</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* ── PC DOSSIERS ── */}
+          {gmPlanTab === "dossiers" && (
+            <>
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:"0.8rem"}}>
+                <button className="btn-add" onClick={() => { setShowDossierForm(v => !v); setEditingDossier(null); setDossierForm({ name:"", imageUrl:"", backstory:"", threads:"", relationships:"", arc:"" }); }}>+ Neuer PC</button>
+              </div>
+
+              {showDossierForm && (
+                <div className="form-panel">
+                  <p className="form-title">{editingDossier ? "PC bearbeiten" : "Neues PC Dossier"}</p>
+                  <div className="f-row">
+                    <div className="f-group"><label className="f-label">Charaktername</label>
+                      <input className="f-input" value={dossierForm.name} onChange={e => setDossierForm(f=>({...f,name:e.target.value}))} placeholder="z.B. Eya" autoFocus /></div>
+                    <div className="f-group"><label className="f-label">Bild-URL (optional)</label>
+                      <input className="f-input" value={dossierForm.imageUrl} onChange={e => setDossierForm(f=>({...f,imageUrl:e.target.value}))} placeholder="https://i.imgur.com/..." /></div>
+                  </div>
+                  <div className="f-group"><label className="f-label">Backstory</label>
+                    <RichEditor value={dossierForm.backstory} onChange={v => setDossierForm(f=>({...f,backstory:v}))} placeholder="Hintergrundgeschichte des Charakters..." rows={4} /></div>
+                  <div className="f-group"><label className="f-label">Geheime Plot-Fäden & Hooks</label>
+                    <RichEditor value={dossierForm.threads} onChange={v => setDossierForm(f=>({...f,threads:v}))} placeholder="Welche Fäden ziehst du für diesen PC? Welche Geheimnisse warten?" rows={4} /></div>
+                  <div className="f-group"><label className="f-label">Beziehungen (NPCs & andere PCs)</label>
+                    <RichEditor value={dossierForm.relationships} onChange={v => setDossierForm(f=>({...f,relationships:v}))} placeholder="Wichtige Verbindungen, Rivalen, Verbündete..." rows={3} /></div>
+                  <div className="f-group"><label className="f-label">Arc-Notizen (Wohin geht die Reise?)</label>
+                    <RichEditor value={dossierForm.arc} onChange={v => setDossierForm(f=>({...f,arc:v}))} placeholder="Wo soll dieser Charakter hin? Welche Entwicklung planst du?" rows={3} /></div>
+                  <div className="f-actions">
+                    <button className="btn-primary" onClick={saveDossier} disabled={!dossierForm.name.trim()}>{editingDossier ? "Speichern" : "Dossier anlegen"}</button>
+                    <button className="btn-secondary" onClick={() => { setShowDossierForm(false); setEditingDossier(null); }}>Abbrechen</button>
+                  </div>
+                </div>
+              )}
+
+              {pcDossiers.length === 0
+                ? <div className="empty">Noch keine PC Dossiers.<br /><span style={{fontSize:"0.85rem"}}>Leg deine Spielercharaktere an. 👤</span></div>
+                : pcDossiers.map(d => {
+                  const isOpen = expandedDossier === d.id;
+                  const secState = expandedDossierSection[d.id] || {};
+                  const sections = [
+                    { key: "backstory",      label: "Backstory",         icon: "📜", color: "#7ec8a0", content: d.backstory },
+                    { key: "threads",        label: "Plot-Fäden & Hooks",icon: "🕸", color: "#c8a840", content: d.threads },
+                    { key: "relationships",  label: "Beziehungen",       icon: "🤝", color: "#7eb8c8", content: d.relationships },
+                    { key: "arc",            label: "Arc-Notizen",       icon: "🌟", color: "#a0ddb8", content: d.arc },
+                  ];
+                  return (
+                    <div key={d.id} className="dossier-card">
+                      <div className="dossier-header" onClick={() => setExpandedDossier(isOpen ? null : d.id)}>
+                        <div className="dossier-avatar">
+                          {d.imageUrl ? <img src={d.imageUrl} alt={d.name} onError={e => { e.target.style.display="none"; }} /> : "👤"}
+                        </div>
+                        <div style={{flex:1}}>
+                          <p className="dossier-pc-name">{d.name}</p>
+                          <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.4rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a4a38",margin:"0.1rem 0 0"}}>
+                            {sections.filter(s => s.content).length} / {sections.length} Sektionen ausgefüllt
+                          </p>
+                        </div>
+                        <div style={{display:"flex",gap:"0.3rem",alignItems:"center"}}>
+                          <button className="card-act-edit" onClick={e => { e.stopPropagation(); startEditDossier(d); }}>✎</button>
+                          <button className="btn-danger" onClick={e => { e.stopPropagation(); if(window.confirm(`${d.name} löschen?`)) upd(pcDossiers.filter(x=>x.id!==d.id)); }}>✕</button>
+                          <span className={`card-chevron ${isOpen ? "open" : ""}`}>▼</span>
+                        </div>
+                      </div>
+                      {isOpen && (
+                        <div className="dossier-body">
+                          {sections.map(sec => {
+                            const secOpen = secState[sec.key];
+                            return (
+                              <div key={sec.key}>
+                                <button className="dossier-section-btn"
+                                  onClick={() => setExpandedDossierSection(s => ({...s, [d.id]: {...(s[d.id]||{}), [sec.key]: !secOpen}}))} >
+                                  <span className="dossier-section-label" style={{color: sec.color}}>
+                                    <span>{sec.icon}</span>{sec.label}
+                                    {!sec.content && <span style={{fontSize:"0.38rem",opacity:0.5,fontWeight:400,letterSpacing:"0.05em"}}>(leer)</span>}
+                                  </span>
+                                  <span className={`dossier-section-chevron ${secOpen ? "open" : ""}`}>▼</span>
+                                </button>
+                                {secOpen && (
+                                  <div className="dossier-section-content">
+                                    {sec.content
+                                      ? <div className="narrative" dangerouslySetInnerHTML={{ __html: sec.content }} />
+                                      : <p style={{fontFamily:"'Crimson Pro',serif",fontStyle:"italic",color:"#2a4a38",fontSize:"0.85rem"}}>Noch nichts eingetragen. Bearbeite das Dossier um Inhalt hinzuzufügen.</p>
+                                    }
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              }
+            </>
+          )}
+
+          {/* ── WELTENARCHIV ── */}
+          {gmPlanTab === "world" && (
+            <>
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:"0.8rem"}}>
+                <button className="btn-add" onClick={() => { setShowWorldForm(v => !v); setEditingWorld(null); setWorldForm({ title:"", text:"", type:"ort", imageUrl:"" }); }}>+ Neuer Eintrag</button>
+              </div>
+
+              {showWorldForm && (
+                <div className="form-panel">
+                  <p className="form-title">{editingWorld ? "Eintrag bearbeiten" : "Neuer Weltenarchiv-Eintrag"}</p>
+                  <div className="f-group"><label className="f-label">Typ</label>
+                    <div className="world-filter-row">
+                      {[
+                        { id: "ort",    label: "Ort / Karte",       icon: "🗺", color: "#7ec8a0" },
+                        { id: "wissen", label: "Wissen / Lore",     icon: "📚", color: "#b87ec8" },
+                        { id: "regel",  label: "Hausregel",         icon: "⚖",  color: "#c8a840" },
+                        { id: "fraktion",label: "Fraktion / Gruppe",icon: "🏴", color: "#7eb8c8" },
+                      ].map(t => (
+                        <span key={t.id} className={`world-filter-btn ${worldForm.type === t.id ? "active" : ""}`}
+                          onClick={() => setWorldForm(f=>({...f,type:t.id}))}>{t.icon} {t.label}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="f-group"><label className="f-label">Titel</label>
+                    <input className="f-input" value={worldForm.title} onChange={e => setWorldForm(f=>({...f,title:e.target.value}))} placeholder="z.B. Die Mondblumenlichtung" autoFocus /></div>
+                  <div className="f-group"><label className="f-label">Inhalt</label>
+                    <RichEditor value={worldForm.text} onChange={v => setWorldForm(f=>({...f,text:v}))} placeholder="Beschreibung, Regeln, Lore..." rows={6} /></div>
+                  <div className="f-group"><label className="f-label">Bild-URL (optional)</label>
+                    <input className="f-input" value={worldForm.imageUrl} onChange={e => setWorldForm(f=>({...f,imageUrl:e.target.value}))} placeholder="https://i.imgur.com/..." /></div>
+                  <div className="f-actions">
+                    <button className="btn-primary" onClick={saveWorldEntry} disabled={!worldForm.title.trim()}>Speichern</button>
+                    <button className="btn-secondary" onClick={() => { setShowWorldForm(false); setEditingWorld(null); }}>Abbrechen</button>
+                  </div>
+                </div>
+              )}
+
+              {(() => {
+                const WORLD_TYPES = [
+                  { id: "all",      label: "Alle",             icon: "✦",  color: "#2a5a38" },
+                  { id: "ort",      label: "Orte",             icon: "🗺", color: "#7ec8a0" },
+                  { id: "wissen",   label: "Wissen",           icon: "📚", color: "#b87ec8" },
+                  { id: "regel",    label: "Hausregeln",       icon: "⚖",  color: "#c8a840" },
+                  { id: "fraktion", label: "Fraktionen",       icon: "🏴", color: "#7eb8c8" },
+                ];
+                const filtered = worldFilter === "all" ? worldEntries : worldEntries.filter(w => w.type === worldFilter);
+                return (
+                  <>
+                    {worldEntries.length > 0 && (
+                      <div className="world-filter-row">
+                        {WORLD_TYPES.map(t => {
+                          const count = t.id === "all" ? worldEntries.length : worldEntries.filter(w => w.type === t.id).length;
+                          if (t.id !== "all" && count === 0) return null;
+                          return (
+                            <span key={t.id} className={`world-filter-btn ${worldFilter === t.id ? "active" : ""}`}
+                              onClick={() => setWorldFilter(t.id)}>{t.icon} {t.label} ({count})</span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {expandedWorld && (() => {
+                      const w = worldEntries.find(x => x.id === expandedWorld);
+                      if (!w) return null;
+                      const wtype = WORLD_TYPES.find(t => t.id === w.type);
+                      return (
+                        <div className="world-detail">
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"0.6rem"}}>
+                            <div>
+                              <span className="world-type-badge" style={{color:wtype?.color||"#7ec8a0",borderColor:wtype?.color||"#7ec8a0",marginBottom:"0.3rem"}}>
+                                {wtype?.icon} {wtype?.label}
+                              </span>
+                              <p style={{fontFamily:"'Playfair Display',serif",fontSize:"1.05rem",fontWeight:700,fontStyle:"italic",color:"#c8dcd2",margin:"0.3rem 0 0.15rem"}}>{w.title}</p>
+                              <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.4rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a4a38"}}>{formatDate(w.ts)}</p>
+                            </div>
+                            <div style={{display:"flex",gap:"0.3rem",alignItems:"center"}}>
+                              <button className="card-act-edit" onClick={() => { setWorldForm({title:w.title,text:w.text||"",type:w.type,imageUrl:w.imageUrl||""}); setEditingWorld(w.id); setShowWorldForm(true); setExpandedWorld(null); }}>✎</button>
+                              <button className="btn-danger" onClick={() => { uwe(worldEntries.filter(x=>x.id!==w.id)); setExpandedWorld(null); }}>✕</button>
+                              <button className="btn-danger" onClick={() => setExpandedWorld(null)}>✕</button>
+                            </div>
+                          </div>
+                          {w.imageUrl && <img src={w.imageUrl} alt={w.title} style={{width:"100%",maxHeight:"220px",objectFit:"contain",borderRadius:"2px",marginBottom:"0.8rem",background:"#0e2018",display:"block"}} onError={e => e.target.style.display="none"} />}
+                          {w.text && <div className="narrative" dangerouslySetInnerHTML={{ __html: w.text }} />}
+                        </div>
+                      );
+                    })()}
+
+                    {filtered.length === 0
+                      ? <div className="empty">Noch keine Einträge im Weltenarchiv.<br /><span style={{fontSize:"0.85rem"}}>Orte, Lore, Hausregeln — dein Weltenbau. 🌍</span></div>
+                      : filtered.map(w => {
+                        const wtype = WORLD_TYPES.find(t => t.id === w.type);
+                        return (
+                          <div key={w.id} className="world-card" onClick={() => setExpandedWorld(expandedWorld === w.id ? null : w.id)}>
+                            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"0.5rem"}}>
+                              <div>
+                                <span className="world-type-badge" style={{color:wtype?.color||"#7ec8a0",borderColor:wtype?.color||"#7ec8a0"}}>
+                                  {wtype?.icon} {wtype?.label}
+                                </span>
+                                <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.7rem",fontWeight:700,letterSpacing:"0.06em",color:"#c8dcd2",margin:"0.3rem 0 0.1rem"}}>{w.title}</p>
+                                <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.38rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a4a38"}}>{formatDate(w.ts)}</p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {/* ── QUICK NOTES ── */}
+          {gmPlanTab === "quick" && (
+            <>
+              <div className="form-panel" style={{marginBottom:"1rem"}}>
+                <p className="form-title">{editingQn ? "Notiz bearbeiten" : "📝 Schnelle Notiz"}</p>
+                <div className="qn-input-row">
+                  <input className="f-input" value={qnForm.text}
+                    onChange={e => setQnForm(f=>({...f,text:e.target.value}))}
+                    onKeyDown={e => e.key === "Enter" && addQuickNote()}
+                    placeholder="Was darfst du nicht vergessen?" autoFocus />
+                  <input className="f-input" style={{maxWidth:"120px"}} value={qnForm.tag}
+                    onChange={e => setQnForm(f=>({...f,tag:e.target.value}))}
+                    onKeyDown={e => e.key === "Enter" && addQuickNote()}
+                    placeholder="Tag (opt.)" />
+                  <button className="btn-primary" onClick={addQuickNote} disabled={!qnForm.text.trim()} style={{whiteSpace:"nowrap"}}>{editingQn ? "✓" : "+"}</button>
+                  {editingQn && <button className="btn-secondary" onClick={() => { setEditingQn(null); setQnForm({text:"",tag:""}); }} style={{whiteSpace:"nowrap"}}>✕</button>}
                 </div>
               </div>
-              <div className="f-group"><label className="f-label">Titel</label>
-                <input className="f-input" value={gmNoteForm.title} onChange={e => setGmNoteForm(f=>({...f,title:e.target.value}))} placeholder="z.B. Session 5 Vorbereitung" autoFocus /></div>
-              <div className="f-group"><label className="f-label">Inhalt</label>
-                <RichEditor value={gmNoteForm.text} onChange={v => setGmNoteForm(f=>({...f,text:v}))} placeholder="Deine Planungsnotizen, Geheimnisse, NPC-Details..." rows={6} /></div>
-              <div className="f-actions">
-                <button className="btn-primary" onClick={saveGmNote} disabled={!gmNoteForm.title.trim()}>Speichern</button>
-                <button className="btn-secondary" onClick={() => { setShowGmNoteForm(false); setEditingGmNote(null); }}>Abbrechen</button>
-              </div>
-            </div>
-          )}
-          <div style={{display:"flex",gap:"0.4rem",flexWrap:"wrap",marginBottom:"1rem"}}>
-            {GM_CATEGORIES.map(c => {
-              const count = gmNotes.filter(n => n.category === c.id).length;
-              if (!count) return null;
-              return <span key={c.id} style={{fontFamily:"'Cinzel',serif",fontSize:"0.42rem",letterSpacing:"0.1em",textTransform:"uppercase",padding:"0.2rem 0.5rem",borderRadius:"1px",border:`1px solid ${c.color}`,color:c.color,display:"flex",alignItems:"center",gap:"0.2rem"}}>{c.icon} {c.label} ({count})</span>;
-            })}
-          </div>
-          {gmNotes.length === 0
-            ? <div className="empty">Noch keine GM-Notizen.<br /><span style={{fontSize:"0.85rem"}}>Nur du kannst das hier sehen. 🔐</span></div>
-            : GM_CATEGORIES.map(cat => {
-              const group = gmNotes.filter(n => n.category === cat.id);
-              if (!group.length) return null;
-              return (
-                <div key={cat.id} style={{marginBottom:"1.2rem"}}>
-                  <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.5rem",letterSpacing:"0.15em",textTransform:"uppercase",color:cat.color,marginBottom:"0.5rem",display:"flex",alignItems:"center",gap:"0.3rem"}}>{cat.icon} {cat.label}</p>
-                  {group.map(n => {
-                    const isOpen = expandedGmNote === n.id;
-                    return (
-                      <div key={n.id} className="gm-note-card">
-                        <div style={{display:"flex",alignItems:"flex-start",gap:"0.6rem",cursor:"pointer"}} onClick={() => setExpandedGmNote(isOpen ? null : n.id)}>
-                          <div style={{flex:1}}>
-                            <p style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontWeight:700,color:"#a0c8b0",margin:"0 0 0.15rem"}}>{n.title}</p>
-                            <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.42rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a4a38"}}>{formatDate(n.ts)}</p>
+
+              {quickNotes.length === 0
+                ? <div className="empty">Keine Quick Notes.<br /><span style={{fontSize:"0.85rem"}}>Schnell was notieren, erledigt abhaken. 📝</span></div>
+                : <>
+                  {quickNotes.filter(n=>!n.done).length > 0 && (
+                    <div style={{marginBottom:"1rem"}}>
+                      {quickNotes.filter(n=>!n.done).map(n => (
+                        <div key={n.id} className="qn-card">
+                          <div className="qn-checkbox" onClick={() => toggleQuickNote(n.id)}>
+                            &nbsp;
                           </div>
-                          <div style={{display:"flex",gap:"0.3rem",alignItems:"center"}}>
-                            <button className="card-act-edit" onClick={e => { e.stopPropagation(); setGmNoteForm({title:n.title,text:n.text,category:n.category}); setEditingGmNote(n.id); setShowGmNoteForm(true); setExpandedGmNote(null); }}>✎</button>
-                            <button className="btn-danger" onClick={e => { e.stopPropagation(); ugn(gmNotes.filter(x => x.id !== n.id)); }}>✕</button>
-                            <span style={{color:"#1a3028",fontSize:"0.7rem",transition:"transform 0.2s",transform:isOpen?"rotate(180deg)":"none"}}>▼</span>
+                          <div style={{flex:1}}>
+                            <p className="qn-text">{n.text}</p>
+                            <div style={{display:"flex",gap:"0.4rem",alignItems:"center",marginTop:"0.2rem",flexWrap:"wrap"}}>
+                              {n.tag && <span className="qn-tag">{n.tag}</span>}
+                              <span className="qn-date">{formatDate(n.ts)}</span>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",gap:"0.2rem",flexShrink:0}}>
+                            <button className="card-act-edit" onClick={() => { setQnForm({text:n.text,tag:n.tag||""}); setEditingQn(n.id); }}>✎</button>
+                            <button className="btn-danger" onClick={() => uqn(quickNotes.filter(x=>x.id!==n.id))}>✕</button>
                           </div>
                         </div>
-                        {isOpen && n.text && (
-                          <div style={{marginTop:"0.8rem",paddingTop:"0.8rem",borderTop:"1px solid #0e2018"}}>
-                            <div className="narrative" dangerouslySetInnerHTML={{ __html: n.text }} />
+                      ))}
+                    </div>
+                  )}
+                  {quickNotes.filter(n=>n.done).length > 0 && (
+                    <div>
+                      <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.45rem",letterSpacing:"0.15em",textTransform:"uppercase",color:"#2a4a38",marginBottom:"0.4rem"}}>✓ Erledigt ({quickNotes.filter(n=>n.done).length})</p>
+                      {quickNotes.filter(n=>n.done).map(n => (
+                        <div key={n.id} className="qn-card done">
+                          <div className="qn-checkbox checked" onClick={() => toggleQuickNote(n.id)}>✓</div>
+                          <div style={{flex:1}}>
+                            <p className="qn-text">{n.text}</p>
+                            <div style={{display:"flex",gap:"0.4rem",alignItems:"center",marginTop:"0.2rem",flexWrap:"wrap"}}>
+                              {n.tag && <span className="qn-tag">{n.tag}</span>}
+                              <span className="qn-date">{formatDate(n.ts)}</span>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          <button className="btn-danger" onClick={() => uqn(quickNotes.filter(x=>x.id!==n.id))}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              }
+            </>
+          )}
+
+          {/* ── LEGACY NOTES ── */}
+          {gmPlanTab === "legacy" && (
+            <>
+              <div style={{display:"flex",justifyContent:"flex-end",marginBottom:"0.8rem"}}>
+                <button className="btn-add" onClick={() => { setShowGmNoteForm(v => !v); setEditingGmNote(null); setGmNoteForm({ title: "", text: "", category: "plan" }); }}>+ Neue Notiz</button>
+              </div>
+
+              {showGmNoteForm && (
+                <div className="form-panel">
+                  <p className="form-title">{editingGmNote ? "Notiz bearbeiten" : "Neue GM-Notiz"}</p>
+                  <div className="f-group"><label className="f-label">Kategorie</label>
+                    <div className="cat-picker">
+                      {GM_CATEGORIES.map(c => (
+                        <span key={c.id} className={`cat-opt ${gmNoteForm.category === c.id ? "selected" : ""}`} onClick={() => setGmNoteForm(f => ({...f, category: c.id}))}>
+                          {c.icon} {c.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="f-group"><label className="f-label">Titel</label>
+                    <input className="f-input" value={gmNoteForm.title} onChange={e => setGmNoteForm(f=>({...f,title:e.target.value}))} placeholder="z.B. Session 5 Vorbereitung" autoFocus /></div>
+                  <div className="f-group"><label className="f-label">Inhalt</label>
+                    <RichEditor value={gmNoteForm.text} onChange={v => setGmNoteForm(f=>({...f,text:v}))} placeholder="Deine Planungsnotizen, Geheimnisse, NPC-Details..." rows={6} /></div>
+                  <div className="f-actions">
+                    <button className="btn-primary" onClick={saveGmNote} disabled={!gmNoteForm.title.trim()}>Speichern</button>
+                    <button className="btn-secondary" onClick={() => { setShowGmNoteForm(false); setEditingGmNote(null); }}>Abbrechen</button>
+                  </div>
                 </div>
-              );
-            })}
+              )}
+
+              <div style={{display:"flex",gap:"0.4rem",flexWrap:"wrap",marginBottom:"1rem"}}>
+                {GM_CATEGORIES.map(c => {
+                  const count = gmNotes.filter(n => n.category === c.id).length;
+                  if (!count) return null;
+                  return <span key={c.id} style={{fontFamily:"'Cinzel',serif",fontSize:"0.42rem",letterSpacing:"0.1em",textTransform:"uppercase",padding:"0.2rem 0.5rem",borderRadius:"1px",border:`1px solid ${c.color}`,color:c.color,display:"flex",alignItems:"center",gap:"0.2rem"}}>{c.icon} {c.label} ({count})</span>;
+                })}
+              </div>
+
+              {gmNotes.length === 0
+                ? <div className="empty">Noch keine GM-Notizen.<br /><span style={{fontSize:"0.85rem"}}>Nur du kannst das hier sehen. 🔐</span></div>
+                : GM_CATEGORIES.map(cat => {
+                  const group = gmNotes.filter(n => n.category === cat.id);
+                  if (!group.length) return null;
+                  return (
+                    <div key={cat.id} style={{marginBottom:"1.2rem"}}>
+                      <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.5rem",letterSpacing:"0.15em",textTransform:"uppercase",color:cat.color,marginBottom:"0.5rem",display:"flex",alignItems:"center",gap:"0.3rem"}}>{cat.icon} {cat.label}</p>
+                      {group.map(n => {
+                        const isOpen = expandedGmNote === n.id;
+                        return (
+                          <div key={n.id} className="gm-note-card">
+                            <div style={{display:"flex",alignItems:"flex-start",gap:"0.6rem",cursor:"pointer"}} onClick={() => setExpandedGmNote(isOpen ? null : n.id)}>
+                              <div style={{flex:1}}>
+                                <p style={{fontFamily:"'Playfair Display',serif",fontSize:"0.95rem",fontWeight:700,color:"#a0c8b0",margin:"0 0 0.15rem"}}>{n.title}</p>
+                                <p style={{fontFamily:"'Cinzel',serif",fontSize:"0.42rem",letterSpacing:"0.1em",textTransform:"uppercase",color:"#2a4a38"}}>{formatDate(n.ts)}</p>
+                              </div>
+                              <div style={{display:"flex",gap:"0.3rem",alignItems:"center"}}>
+                                <button className="card-act-edit" onClick={e => { e.stopPropagation(); setGmNoteForm({title:n.title,text:n.text,category:n.category}); setEditingGmNote(n.id); setShowGmNoteForm(true); setExpandedGmNote(null); }}>✎</button>
+                                <button className="btn-danger" onClick={e => { e.stopPropagation(); ugn(gmNotes.filter(x => x.id !== n.id)); }}>✕</button>
+                                <span style={{color:"#1a3028",fontSize:"0.7rem",transition:"transform 0.2s",transform:isOpen?"rotate(180deg)":"none"}}>▼</span>
+                              </div>
+                            </div>
+                            {isOpen && n.text && (
+                              <div style={{marginTop:"0.8rem",paddingTop:"0.8rem",borderTop:"1px solid #0e2018"}}>
+                                <div className="narrative" dangerouslySetInnerHTML={{ __html: n.text }} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+            </>
+          )}
         </div>
       )}
     </div>
